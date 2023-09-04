@@ -16,24 +16,25 @@ export const getHostName = () => {
     // TODO: Multion doesn't allow custom port yet. Remove this once it's supported.
     newPort = '8001';
   }
+  return 'temo-service.onrender.com';
+  // if (process.env.REACT_APP_API_HOST) {
+  //   return process.env.REACT_APP_API_HOST.split('//')[1];
+  // }
 
-  if (process.env.REACT_APP_API_HOST) {
-    return process.env.REACT_APP_API_HOST.split('//')[1];
-  }
-
-  if (!(hostname === 'localhost' || isIP(hostname))) {
-    // Remove www. from hostname
-    hostname = hostname.replace('www.', '');
-    hostname = 'api.' + hostname;
-    newPort = window.location.protocol === 'https:' ? 443 : 80;
-  }
-  var newHost = hostname + ':' + newPort;
-  return newHost;
+  // if (!(hostname === 'localhost' || isIP(hostname))) {
+  //   // Remove www. from hostname
+  //   hostname = hostname.replace('www.', '');
+  //   hostname = 'api.' + hostname;
+  //   newPort = window.location.protocol === 'https:' ? 443 : 80;
+  // }
+  // var newHost = hostname + ':' + newPort;
+  // return newHost;
 };
 
 export const getScheme = () => {
-  if (process.env.REACT_APP_API_HOST) {
-    return process.env.REACT_APP_API_HOST.split('//')[0];
-  }
-  return window.location.protocol;
+  return 'https:';
+  // if (process.env.REACT_APP_API_HOST) {
+  //   return process.env.REACT_APP_API_HOST.split('//')[0];
+  // }
+  // return window.location.protocol;
 };
