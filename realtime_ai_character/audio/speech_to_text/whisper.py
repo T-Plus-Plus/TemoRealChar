@@ -83,7 +83,10 @@ class Whisper(Singleton, SpeechToText):
         return text
 
     def _convert_webm_to_wav(self, webm_data, local=True):
-        webm_audio = AudioSegment.from_file(io.BytesIO(webm_data), format="webm")
+        try:
+            webm_audio = AudioSegment.from_file(io.BytesIO(webm_data), format="webm")
+        except:
+            webm_audio = AudioSegment.from_file(io.BytesIO(webm_data))
         wav_data = io.BytesIO()
         webm_audio.export(wav_data, format="wav")
         if local:
