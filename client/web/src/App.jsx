@@ -68,6 +68,54 @@ const App = () => {
   const isConnected = useRef(false);
   const isMobile = window.innerWidth <= 768;
 
+  // #region d-id
+  const maxRetryCount = 3;
+  const maxDelaySec = 4;
+
+  async function fetchWithRetries(url, options, retries = 1) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      if (retries <= maxRetryCount) {
+        const delay =
+          Math.min(Math.pow(2, retries) / 4 + Math.random(), maxDelaySec) *
+          1000;
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        console.log(
+          `Request failed, retrying ${retries}/${maxRetryCount}. Error ${err}`
+        );
+        return fetchWithRetries(url, options, retries + 1);
+      } else {
+        throw new Error(`Max retries exceeded. error: ${err}`);
+      }
+    }
+  }
+  const createDIdStream = async () => {
+    const options = {
+      method: 'POST',
+      headers: {
+        // accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.REACT_APP_D_ID_API_KEY}`,
+      },
+      body: JSON.stringify({
+        source_url: 'https://d-id-public-bucket.s3.amazonaws.com/or-roman.jpg',
+      }),
+    };
+    // const url = 'https://corsproxy.io/?' + encodeURIComponent('https://api.d-id.com/talks/streams');
+    const url = 'https://api.d-id.com/talks/streams';
+    const [data, error] = await fetchWithRetries(url, options)
+      .then(res => res.json())
+      .then(res => [res.data, null])
+      .catch(err => [null, err]);
+
+    console.log(data);
+    console.log(error);
+  };
+  // #endregion
+
   useEffect(() => {
     auth.onAuthStateChanged(async user => {
       setUser(user);
@@ -75,6 +123,7 @@ const App = () => {
         isLoggedIn.current = true;
         let curToken = await auth.currentUser.getIdToken();
         setToken(curToken);
+        await createDIdStream();
       } else {
         isLoggedIn.current = false;
       }
