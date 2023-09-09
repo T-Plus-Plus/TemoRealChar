@@ -159,6 +159,15 @@ ELEVEN_LABS_API_KEY=<api key>
 ```
 </details>
 
+## EC2 pre
+if ubuntu server, upgrade npm
+
+```sh
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+
+sudo apt install nodejs
+```
+
 ## 💿 Installation via Python
 - **Step 1**. Clone the repo
    ```sh
