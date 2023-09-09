@@ -182,20 +182,20 @@ class OpenaiLlm(LLM):
                 user_input.lower().startswith("multion")):
                 response = await self.multion_agent.action(user_input)
                 context += response
-        try:
-            self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
-            self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
-            self.agent.callbacks = [callback, audioCallback, StreamingStdOutCallbackHandler()]
+        # try:
+        #     self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
+        #     self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
+        #     self.agent.callbacks = [callback, audioCallback, StreamingStdOutCallbackHandler()]
 
-            try:
-                response = self.agent.run(input=user_input)
-            except ValueError as e:
-                response = str(e)
-                if not response.startswith("Could not parse LLM output: "):
-                    raise e
-                response = response.removeprefix("Could not parse LLM output: ")
-        except Exception as e:
-            logger.error(e)
+        #     try:
+        #         response = self.agent.run(input=user_input)
+        #     except ValueError as e:
+        #         response = str(e)
+        #         if not response.startswith("Could not parse LLM output: "):
+        #             raise e
+        #         response = response.removeprefix("Could not parse LLM output: ")
+        # except Exception as e:
+        #     logger.error(e)
 
         # 2. Add user input to history
         history.append(HumanMessage(content=user_input_template.format(
