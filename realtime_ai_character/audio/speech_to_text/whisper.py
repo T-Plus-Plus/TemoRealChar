@@ -86,6 +86,7 @@ class Whisper(Singleton, SpeechToText):
         try:
             webm_audio = AudioSegment.from_file(io.BytesIO(webm_data), format="webm")
         except:
+            # try to read from pipe without format being specified
             webm_audio = AudioSegment.from_file(io.BytesIO(webm_data))
         wav_data = io.BytesIO()
         webm_audio.export(wav_data, format="wav")
