@@ -187,12 +187,13 @@ const Characters = ({
       >
         <DialogTitle id='dialog-title'>
           {' '}
-          Select partner from RealChar community{' '}
+          Select partner from Temus community{' '}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
             {characterGroups.map(character => {
-              return character.source === 'community' ? (
+              return character.source === 'community' &&
+                !character.is_author ? (
                 <Grid item xs={isMobile ? 12 : 6}>
                   <Button
                     variant='outlined'

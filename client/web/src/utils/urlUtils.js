@@ -13,6 +13,14 @@ export const getHostName = () => {
   var hostname = parts[0];
   // Local deployment uses 8000 port by default.
   var newPort = '8000';
+  if (process.env.REACT_APP_ENABLE_MULTION) {
+    // TODO: Multion doesn't allow custom port yet. Remove this once it's supported.
+    newPort = '8001';
+  }
+
+  if (process.env.REACT_APP_API_HOST) {
+    return process.env.REACT_APP_API_HOST.split('//')[1];
+  }
 
   if (!(hostname === 'localhost' || isIP(hostname))) {
     // Remove www. from hostname
@@ -22,4 +30,11 @@ export const getHostName = () => {
   }
   var newHost = hostname + ':' + newPort;
   return newHost;
+};
+
+export const getScheme = () => {
+  if (process.env.REACT_APP_API_HOST) {
+    return process.env.REACT_APP_API_HOST.split('//')[0];
+  }
+  return window.location.protocol;
 };

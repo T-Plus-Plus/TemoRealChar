@@ -17,12 +17,12 @@ import IconButton from '@mui/material/IconButton';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CustomTooltip from '../Common/CustomTooltip';
 import { signInWithGoogle } from '../Auth/SignIn';
-import { getHostName } from '../../utils/urlUtils';
+import { getHostName, getScheme } from '../../utils/urlUtils';
 import { useCallback, useState } from 'react';
 import { TextField } from '@mui/material';
 
 const updateQuivrInfo = async (token, quivrApiKey, quivrBrainId) => {
-  const scheme = window.location.protocol;
+  const scheme = getScheme();
   const url = scheme + '//' + getHostName() + '/quivr_info';
   // make a POST request to the URL with body of quivr_api_key and quivr_brain_id
   const response = await fetch(url, {
@@ -131,7 +131,7 @@ const AdvancedOptions = ({
       if (event.target.checked) {
         const fetchQuivrApiKey = async () => {
           if (isLoggedIn.current) {
-            const scheme = window.location.protocol;
+            const scheme = getScheme();
             const url = scheme + '//' + getHostName() + '/quivr_info';
             const quivrInfoResponse = await fetch(url, {
               headers: {
@@ -189,21 +189,21 @@ const AdvancedOptions = ({
       <label>Advanced Options</label>
       <div className='advanced-options'>
         <OptionSwitch
-          checked={useSearch}
-          name={'Enable Google Search'}
-          tooltip={
-            'Enable the character to access the latest information and online events, but may lead to a slight delay in response time.'
-          }
-          handleChange={handleSearchChange}
-          handleTooltipClick={() => {}}
-        />
-        <OptionSwitch
           checked={useEchoCancellation}
           name={'Open Speakers'}
           tooltip={
             'Enable VAD + WebRTC based echo cancellation, suitable for speakers, but may lead to a slight delay in response time or mistranscription.'
           }
           handleChange={handleEchoCanellationChange}
+          handleTooltipClick={() => {}}
+        />
+        <OptionSwitch
+          checked={useSearch}
+          name={'Enable Google Search'}
+          tooltip={
+            'Enable the character to access the latest information and online events, but may lead to a slight delay in response time.'
+          }
+          handleChange={handleSearchChange}
           handleTooltipClick={() => {}}
         />
         <OptionSwitch
