@@ -188,12 +188,13 @@ class OpenaiLlm(LLM):
         #     self.agent.callbacks = [callback, audioCallback, StreamingStdOutCallbackHandler()]
 
         #     try:
-        #         response = self.agent.run(input=user_input)
+        #         qa_response = self.agent.run(input=user_input)
         #     except ValueError as e:
-        #         response = str(e)
-        #         if not response.startswith("Could not parse LLM output: "):
+        #         qa_response = str(e)
+        #         if not qa_response.startswith("Could not parse LLM output: "):
         #             raise e
-        #         response = response.removeprefix("Could not parse LLM output: ")
+        #         # response = response.removeprefix("Could not parse LLM output: ")
+        #     logger.info(f'QA Response: {qa_response}')
         # except Exception as e:
         #     logger.error(e)
 
