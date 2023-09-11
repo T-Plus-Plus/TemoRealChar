@@ -144,11 +144,6 @@ const Conversation = ({
   }, [textAreaValue]);
   // #endregion
 
-  const { avatarDisplay, handleFirstInteractionAudio } = useAvatarView(
-    '66e4c0a5-da55-4d6c-b542-44345a5c39c4',
-    emotion
-  );
-
   useEffect(() => {
     const emotion = extractEmotionFromPrompt(message);
     if (emotion && emotion.length > 0) setEmotion(emotion);
@@ -257,7 +252,6 @@ const Conversation = ({
           handleDisconnect={handleDisconnect}
           setIsCallView={setIsCallView}
           sessionId={sessionId}
-          handleFirstInteractionAudio={handleFirstInteractionAudio}
         />
       </div>
 

@@ -30,25 +30,9 @@ const CallView = ({
   handleDisconnect,
   setIsCallView,
   sessionId,
-  handleFirstInteractionAudio,
 }) => {
   const { initialize, setInitialize } = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isPlaying && audioContextRef.current) {
-      playAudios(
-        audioContextRef,
-        audioPlayer,
-        audioQueue,
-        setIsPlaying,
-        handleFirstInteractionAudio,
-        audioSourceNodeRef,
-        initialize,
-        setInitialize
-      );
-    }
-  }, [isPlaying]);
 
   useEffect(() => {
     if (!audioContextRef.current) return;
