@@ -125,8 +125,8 @@ class OpenaiLlm(LLM):
                     curs_obj.close()
 
             except Exception as e:
-                print (e)
-
+                return
+            
             return f"Inserted name: {name} email: {email}"
         
         else:
@@ -198,7 +198,7 @@ class OpenaiLlm(LLM):
 
             messages = [
                 SystemMessage(content="You are a repeater that repeats things exactly word for word."),
-                HumanMessage(content=f"Repeat exactly the same as what is shown. \n Do not change anything. Your response should be exactly the same \n {agent_response}"),
+                HumanMessage(content=f"Repeat exactly the same as what is shown. \n Do not change anything. Your response should be exactly the same, prefix your responses with 'Temo> ' \n {agent_response}"),
             ]
 
             # 3. Generate response
