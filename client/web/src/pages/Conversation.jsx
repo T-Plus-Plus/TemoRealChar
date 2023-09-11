@@ -117,11 +117,8 @@ const Conversation = ({
       }
 
       const data = await response.json();
-      // setMattSpeaking(previous => {
-      //   if (data.output.output_video != previous)
-      //     return data.output.output_video;
-      // });
       setMattSpeaking(data.output.output_video);
+      setIsSpeaking(true);
     } catch (err) {
       console.error('Error:', err);
     }
@@ -136,7 +133,6 @@ const Conversation = ({
           // TODO: Send POST request here
           console.log(lastMessage);
           lipSync(lastMessage);
-          setIsSpeaking(true);
         }
       }
     }
