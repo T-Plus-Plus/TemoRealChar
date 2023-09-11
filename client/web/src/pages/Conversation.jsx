@@ -16,6 +16,7 @@ import { extractEmotionFromPrompt } from '@avatechai/avatars';
 import lz from 'lz-string';
 
 import matt_idle from '../assets/videos/matt_idle.mp4';
+import { debounce } from 'lodash';
 
 // TODO: user can access this page only if isConnected.current
 
@@ -116,15 +117,18 @@ const Conversation = ({
       }
 
       const data = await response.json();
+      // setMattSpeaking(previous => {
+      //   if (data.output.output_video != previous)
+      //     return data.output.output_video;
+      // });
       setMattSpeaking(data.output.output_video);
-      console.log(response.status, data);
     } catch (err) {
       console.error('Error:', err);
     }
   };
 
-  useEffect(() => {
-    if (!isTextStreaming && textAreaValue) {
+  const debouncedEffect = debounce(textAreaValue => {
+    if (textAreaValue) {
       const splits = textAreaValue.split('> ');
       if (splits.length > 1) {
         const lastMessage = splits[splits.length - 1];
@@ -136,7 +140,12 @@ const Conversation = ({
         }
       }
     }
-  }, [textAreaValue, isTextStreaming]);
+  }, 1000);
+
+  useEffect(() => {
+    debouncedEffect(textAreaValue);
+    return () => debouncedEffect.cancel();
+  }, [textAreaValue]);
   // #endregion
 
   const { avatarDisplay, handleFirstInteractionAudio } = useAvatarView(
