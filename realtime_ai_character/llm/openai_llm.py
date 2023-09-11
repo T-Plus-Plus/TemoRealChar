@@ -182,30 +182,32 @@ class OpenaiLlm(LLM):
                 user_input.lower().startswith("multion")):
                 response = await self.multion_agent.action(user_input)
                 context += response
-        
-        self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
-        self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
-        self.agent.callbacks = [callback, audioCallback, StreamingStdOutCallbackHandler()]
+        if character.llm_user_prompt.find("meeting_details") > -1:
+            logger.info(f'Meeting details: {context}')
+            self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
+            self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
+            self.agent.callbacks = [callback, audioCallback, StreamingStdOutCallbackHandler()]
 
-        try:
-            response = self.agent.run(input=user_input)
-        except ValueError as e:
-            response = str(e)
-            if not response.startswith("Could not parse LLM output: "):
-                raise e
-            response = response.removeprefix("Could not parse LLM output: ")
+            try:
+                response = self.agent.run(input=user_input)
+            except ValueError as e:
+                response = str(e)
+                if not response.startswith("Could not parse LLM output: "):
+                    raise e
+                response = response.removeprefix("Could not parse LLM output: ")
+            return response
 
-        # # 2. Add user input to history
-        # history.append(HumanMessage(content=user_input_template.format(
-        #     context=context, query=user_input)))
+        # 2. Add user input to history
+        history.append(HumanMessage(content=user_input_template.format(
+            context=context, query=user_input)))
 
-        # # 3. Generate response
-        # response = await self.chat_open_ai.agenerate(
-        #     [history], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
-        #     metadata=metadata)
+        # 3. Generate response
+        response = await self.chat_open_ai.agenerate(
+            [history], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
+            metadata=metadata)
 
         logger.info(f'Response: {response}')
-        return response
+        return response.generations[0][0].text
 
     def _generate_context(self, query, character: Character) -> str:
         docs = self.db.similarity_search(query)

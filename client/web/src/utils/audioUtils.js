@@ -66,22 +66,27 @@ export const playAudios = async (
   setInitialize
 ) => {
   while (audioQueue.current.length > 0) {
-    const audioBuffer = await audioContextRef.current.decodeAudioData(
-      audioQueue.current[0]
-    );
-    const bs = audioContextRef.current.createBufferSource();
-    bs.buffer = audioBuffer;
-    bs.connect(audioSourceNodeRef.current);
-    setupAvatarLipSync(audioContextRef.current, bs);
-    handleFirstInteractionAudio(); // For the first interaction, we need to play a sound to unlock blend shapes
-    await playAudio(
-      audioContextRef,
-      audioPlayer,
-      bs,
-      initialize,
-      setInitialize
-    );
-    audioQueue.current.shift();
+    try {
+      const audioBuffer = await audioContextRef.current.decodeAudioData(
+        audioQueue.current[0]
+      );
+      const bs = audioContextRef.current.createBufferSource();
+      bs.buffer = audioBuffer;
+      bs.connect(audioSourceNodeRef.current);
+      setupAvatarLipSync(audioContextRef.current, bs);
+      handleFirstInteractionAudio(); // For the first interaction, we need to play a sound to unlock blend shapes
+      await playAudio(
+        audioContextRef,
+        audioPlayer,
+        bs,
+        initialize,
+        setInitialize
+      );
+      audioQueue.current.shift();
+    } catch (error) {
+      console.error(error.message);
+      break; // Stop playing audio if any error occurs
+    }
   }
   // done playing audios
   setIsPlaying(false);
