@@ -183,29 +183,43 @@ class OpenaiLlm(LLM):
                 response = await self.multion_agent.action(user_input)
                 context += response
         
-        self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
-        self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
+        if character.llm_user_prompt.find("meeting_details") > -1:
+            self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
+            self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
 
-        try:
-            agent_response = self.agent.run(input=user_input)
-        except ValueError as e:
-            agent_response = str(e)
-            if not agent_response.startswith("Could not parse LLM output: "):
-                raise e
-            agent_response = agent_response.removeprefix("Could not parse LLM output: ")
+            try:
+                agent_response = self.agent.run(input=user_input)
+            except ValueError as e:
+                agent_response = str(e)
+                if not agent_response.startswith("Could not parse LLM output: "):
+                    raise e
+                agent_response = agent_response.removeprefix("Could not parse LLM output: ")
 
-        messages = [
-            SystemMessage(content="You are a repeater that repeats things exactly word for word."),
-            HumanMessage(content=f"Repeat exactly the same as what is shown. \n Do not change anything. Your response should be exactly the same \n {agent_response}"),
-        ]
+            messages = [
+                SystemMessage(content="You are a repeater that repeats things exactly word for word."),
+                HumanMessage(content=f"Repeat exactly the same as what is shown. \n Do not change anything. Your response should be exactly the same \n {agent_response}"),
+            ]
 
-        # 3. Generate response
-        response = await self.chat_open_ai.agenerate(
-            [messages], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
-            metadata=metadata)
+            # 3. Generate response
+            response = await self.chat_open_ai.agenerate(
+                [messages], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
+                metadata=metadata)
 
-        logger.info(f'Response: {response}')
-        return response.generations[0][0].text
+            logger.info(f'Response: {response}')
+            return response.generations[0][0].text
+        
+        else:
+            # 2. Add user input to history
+            history.append(HumanMessage(content=user_input_template.format(
+                context=context, query=user_input)))
+            
+            # 3. Generate response
+            response = await self.chat_open_ai.agenerate(
+                [history], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
+                metadata=metadata)
+
+            logger.info(f'Response: {response}')
+            return response.generations[0][0].text
 
     def _generate_context(self, query, character: Character) -> str:
         docs = self.db.similarity_search(query)
