@@ -4,16 +4,18 @@
  * created by Lynchee on 7/28/23
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import CallView from '../components/CallView';
 import TextView from '../components/TextView';
 import { useNavigate, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 
-import Avatar from '@mui/material/Avatar';
+// import Avatar from '@mui/material/Avatar';
 import useAvatarView from '../components/AvatarView';
 import { extractEmotionFromPrompt } from '@avatechai/avatars';
 import lz from 'lz-string';
+
+import matt_idle from '../assets/videos/matt_idle.mp4';
 
 // TODO: user can access this page only if isConnected.current
 
@@ -75,6 +77,67 @@ const Conversation = ({
   const useMultiOn = useMultiOnParam === 'true';
   const message = isTextStreaming ? '' : textAreaValue;
   const [emotion, setEmotion] = useState('');
+
+  // #region Gooey declaration
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [matt_speaking, setMattSpeaking] = useState(null);
+  const videoRef = useRef(null);
+  const ideal_face =
+    'https://storage.googleapis.com/dara-c1b52.appspot.com/daras_ai/media/ef9a2d1a-4f76-11ee-ab96-02420a0001a4/matt_idle.mp4';
+  const ideal_face_1 =
+    'https://storage.googleapis.com/dara-c1b52.appspot.com/daras_ai/media/0b36f2e0-4f79-11ee-b0d4-02420a0001a3/matt_idle_1.mp4';
+  const speaking_face =
+    'https://storage.googleapis.com/dara-c1b52.appspot.com/daras_ai/media/784d65a0-4f6d-11ee-8c8c-02420a0001a5/matt_speaking.mp4';
+  const voiceOptions = 'Google UK English Male';
+  const lipSync = async text => {
+    const payload = {
+      input_face: ideal_face,
+      text_prompt: Array.isArray(text) ? text[0] : text,
+      google_voice_name: 'en-GB-News-J',
+      google_speaking_rate: 1.0,
+    };
+
+    try {
+      const response = await fetch(
+        'https://api.gooey.ai/v2/LipsyncTTS/?run_id=3pdoyhzh&uid=EzamiSECR5bJwT0vHV3Si6ljitF2',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + process.env.REACT_APP_GOOEY_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        console.log(response.status);
+        throw new Error(response.status);
+      }
+
+      const data = await response.json();
+      setMattSpeaking(data.output.output_video);
+      console.log(response.status, data);
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isTextStreaming && textAreaValue) {
+      const splits = textAreaValue.split('> ');
+      if (splits.length > 1) {
+        const lastMessage = splits[splits.length - 1];
+        if (!splits[splits.length - 2].endsWith('You')) {
+          // TODO: Send POST request here
+          console.log(lastMessage);
+          lipSync(lastMessage);
+          setIsSpeaking(true);
+        }
+      }
+    }
+  }, [textAreaValue, isTextStreaming]);
+  // #endregion
 
   const { avatarDisplay, handleFirstInteractionAudio } = useAvatarView(
     '66e4c0a5-da55-4d6c-b542-44345a5c39c4',
@@ -156,7 +219,19 @@ const Conversation = ({
         ) : null}
       </p>
       <div className='flex flex-col space-y-4 w-full justify-center items-center'>
-        {avatarDisplay}
+        <video
+          ref={videoRef}
+          // eslint-disable-next-line react/no-unknown-property
+          x-webkit-airplay='allow'
+          autoPlay
+          loop={!isSpeaking}
+          muted={!isSpeaking}
+          preload='auto'
+          className='css-1drke4h e3rlp0e0'
+          src={isSpeaking ? matt_speaking : matt_idle}
+          onEnded={() => setIsSpeaking(false)}
+        ></video>
+        {/* {avatarDisplay} */}
       </div>
 
       <div
