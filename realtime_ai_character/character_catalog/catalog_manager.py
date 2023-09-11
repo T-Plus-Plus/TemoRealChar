@@ -140,9 +140,9 @@ class CatalogManager(Singleton):
         loader = SimpleDirectoryReader(Path(data_path))
         documents = loader.load_data()
         text_splitter = RecursiveCharacterTextSplitter(
-            separators=" ",
-            chunk_size=100,
-            chunk_overlap=10)
+            separators="",
+            chunk_size=50,
+            chunk_overlap=5)
         docs = text_splitter.create_documents(
             texts=[d.text for d in documents],
             metadatas=[{

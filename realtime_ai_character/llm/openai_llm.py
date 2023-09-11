@@ -6,7 +6,7 @@ if os.getenv('OPENAI_API_TYPE') == 'azure':
     from langchain.chat_models import AzureChatOpenAI
 else:
     from langchain.chat_models import ChatOpenAI
-from langchain.schema import BaseMessage, HumanMessage
+from langchain.schema import BaseMessage, HumanMessage, SystemMessage
 
 from langchain.chains import RetrievalQA
 from langchain.agents import initialize_agent, Tool, AgentExecutor, AgentType
@@ -73,17 +73,18 @@ class OpenaiLlm(LLM):
     
         self.qa_tool = Tool(name = "meeting_details",
                             func = self.meeting_details,
-                            description = "Use this tool whenever a guest provides his or her name for a meeting to retrieve their details. \
-                                        The input to this tool should be a string. You must use this tool and DO NOT make up the phone number of the guest (eg 12345678)!")
+                            description = "Use this tool whenever a guest provides his or her name for a meeting to retrieve their details.  \
+                                The input to this tool should be a string. You must use this tool and DO NOT make up the email of the guest!")
 
         self.sql_tool = Tool(name="Insert_guest_datatable",
-                        func=self.parsing_name_number,
-                        description="Use this tool whenever a guest confirms his or her name and number for a meeting, when you need to insert a name and phone number into a database to take his or her attendance.\
-                                    Take attendance of the guest after he has confirmed his details.\
-                                    The input to this tool should be a comma separated list of strings of length two, representing the name and the phone number you would like to insert into the database.\
-                                    For example, `John,91827364` would be the input if you wanted to insert the name John and the phone number 91827364\
-                                    If only `John` is provided, only insert the name John\
-                                    If only `91827364` is provided, only insert the phone number 91827364")
+                            func=self.parsing_name_email,
+                            description="Use this tool when you need to insert a name and email into a database to take attendance of a guest. \
+                            Take attendance of the guest after he has confirmed his details  \
+                            The input to this tool should be a comma separated list of strings of length two, representing the name and the email you would like to insert into the database. \
+                            For example, `John,john.ang@temus.com` would be the input if you wanted to insert the name John and the email john.ang@temus.com\
+                            If only `John` is provided, only insert the name John\
+                            If only `john.ang@temus.com` is provided, only insert the email john.ang@temus.com\
+                            Do not take his attendance again after it has already been taken")
 
 
         self.tools = [self.sql_tool, self.qa_tool]
@@ -94,15 +95,15 @@ class OpenaiLlm(LLM):
                                       memory =  ConversationBufferMemory(memory_key="chat_history", return_messages=True))
         
 
-    def parsing_name_number(self, string):
+    def parsing_name_email(self, string):
         try:
-            name, number = string.split(",")
-            return self.insert_sql_table(name = name, phone_number=int(number))
+            name, email = string.split(",")
+            return self.insert_sql_table(name = name, email=email)
         except:
-            return self.insert_sql_table(name=string, phone_number=None)
+            return self.insert_sql_table(name=string, email=None)
 
 
-    def insert_sql_table(self, name=None, phone_number=None):
+    def insert_sql_table(self, name=None, email=None):
 
         # # Define connection parameters
         # params = {
@@ -114,28 +115,28 @@ class OpenaiLlm(LLM):
         table_name = "guests_test"
 
         # check for the values we have been given
-        if name and phone_number:
+        if name and email:
             # Establish the connection
             try:
                 with psycopg2.connect(SQLALCHEMY_DATABASE_URL) as conn:
                     curs_obj = conn.cursor()
-                    curs_obj.execute(f"INSERT INTO {table_name} (name, number) VALUES('{name}', {phone_number});")
+                    curs_obj.execute(f"INSERT INTO {table_name} (name, email) VALUES('{name}', '{email}');")
                     conn.commit()
                     curs_obj.close()
 
-            except Exception:
+            except Exception as e:
                 return
-
-            return f"Inserted name: {name} number: {phone_number}"
+            
+            return f"Inserted name: {name} email: {email}"
         
         else:
-            return "Could not insert into database. Need name AND phone number."
+            return "Could not insert into database. Need name AND email."
 
     def meeting_details(self, name):
 
-        query = f"What are {name}'s details?"
+        query = f"What is {name}'s email?"
 
-        docs = self.db.similarity_search(query, 2)
+        docs = self.db.similarity_search(query, 4)
         docs = [d for d in docs if d.metadata['character_name'] == 'temo']
         context = '\n'.join([d.page_content for d in docs])
 
@@ -182,32 +183,44 @@ class OpenaiLlm(LLM):
                 user_input.lower().startswith("multion")):
                 response = await self.multion_agent.action(user_input)
                 context += response
+        
         if character.llm_user_prompt.find("meeting_details") > -1:
-            logger.info(f'Meeting details: {context}')
             self.agent.agent.llm_chain.prompt.messages[0].prompt.template = history[0].content # sys message
             self.agent.agent.llm_chain.prompt.messages[2].prompt.template = user_input_template # user
-            self.agent.callbacks = [callback, audioCallback, StreamingStdOutCallbackHandler()]
 
             try:
-                response = self.agent.run(input=user_input)
+                agent_response = self.agent.run(input=user_input)
             except ValueError as e:
-                response = str(e)
-                if not response.startswith("Could not parse LLM output: "):
+                agent_response = str(e)
+                if not agent_response.startswith("Could not parse LLM output: "):
                     raise e
-                response = response.removeprefix("Could not parse LLM output: ")
-            return response
+                agent_response = agent_response.removeprefix("Could not parse LLM output: ")
 
-        # 2. Add user input to history
-        history.append(HumanMessage(content=user_input_template.format(
-            context=context, query=user_input)))
+            messages = [
+                SystemMessage(content="You are a repeater that repeats things exactly word for word."),
+                HumanMessage(content=f"Repeat exactly the same as what is shown. \n Do not change anything. Your response should be exactly the same, prefix your responses with 'Temo> ' \n {agent_response}"),
+            ]
 
-        # 3. Generate response
-        response = await self.chat_open_ai.agenerate(
-            [history], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
-            metadata=metadata)
+            # 3. Generate response
+            response = await self.chat_open_ai.agenerate(
+                [messages], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
+                metadata=metadata)
 
-        logger.info(f'Response: {response}')
-        return response.generations[0][0].text
+            logger.info(f'Response: {response}')
+            return response.generations[0][0].text
+            
+        else:
+            # 2. Add user input to history
+            history.append(HumanMessage(content=user_input_template.format(
+                context=context, query=user_input)))
+            
+            # 3. Generate response
+            response = await self.chat_open_ai.agenerate(
+                [history], callbacks=[callback, audioCallback, StreamingStdOutCallbackHandler()],
+                metadata=metadata)
+
+            logger.info(f'Response: {response}')
+            return response.generations[0][0].text
 
     def _generate_context(self, query, character: Character) -> str:
         docs = self.db.similarity_search(query)
