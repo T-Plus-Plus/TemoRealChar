@@ -196,7 +196,7 @@ class OpenaiLlm(LLM):
 
         messages = [
             SystemMessage(content="You are a repeater that repeats things exactly word for word."),
-            HumanMessage(content=f"Repeat exactly the same as what is shown: \n {agent_response} \n Do not change anything. Your response should be exactly the same"),
+            HumanMessage(content=f"Repeat exactly the same as what is shown. \n Do not change anything. Your response should be exactly the same \n {agent_response}"),
         ]
 
         # 3. Generate response
